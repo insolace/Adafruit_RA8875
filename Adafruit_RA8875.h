@@ -133,6 +133,8 @@ class Adafruit_RA8875 : public Adafruit_GFX {
  public:
   Adafruit_RA8875(uint8_t cs, uint8_t rst);
   
+  uint16_t rawW, rawH;
+    
   boolean begin(enum RA8875sizes s);
   void    softReset(void);
   void    displayOn(boolean on);
@@ -212,6 +214,7 @@ class Adafruit_RA8875 : public Adafruit_GFX {
   uint16_t height(void);
   void    setRotation(int8_t rotation);
   int8_t  getRotation(void);
+  void    setTextRotation(int8_t rotation);
   
   /**************************************************************************/
   /*!
@@ -224,6 +227,8 @@ class Adafruit_RA8875 : public Adafruit_GFX {
   /**************************************************************************/
   virtual size_t write(uint8_t b) {
     textWrite((const char *)&b, 1);
+    //write((const char *)&b, 1);
+ 
     return 1;
   }
 
@@ -239,6 +244,7 @@ class Adafruit_RA8875 : public Adafruit_GFX {
   /**************************************************************************/
   virtual size_t write(const uint8_t *buffer, size_t size) {
     textWrite((const char *)buffer, size);
+    //write((const char *)buffer, size);
     return size;
   }
 
@@ -255,8 +261,8 @@ class Adafruit_RA8875 : public Adafruit_GFX {
   void roundRectHelper(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, uint16_t color, bool filled);
 
   /* Rotation Functions */
-  int16_t applyRotationX(int16_t x);
-  int16_t applyRotationY(int16_t y);
+  //int16_t applyRotation(int16_t x, int16_t y);
+  //int16_t applyRotationY(int16_t y);
 
   void swap(int16_t &x, int16_t &y) {
     int16_t temp = x;

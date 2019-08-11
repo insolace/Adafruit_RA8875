@@ -109,10 +109,17 @@ boolean Adafruit_RA8875::begin(enum RA8875sizes s) {
   else if (_size == RA8875_800x480) {
     _width = 800;
     _height = 480;
+    rawW = 800;
+    rawH = 480;
   }
   else {
     return false;
   }
+  //Serial.print("begin w");
+  //Serial.print(_width);
+  //Serial.print(" h");
+  //Serial.println(_height);  
+    
   _rotation = 0;
   pinMode(_cs, OUTPUT);
   digitalWrite(_cs, HIGH);
@@ -316,7 +323,13 @@ uint16_t Adafruit_RA8875::height(void) { return _height; }
  @return  The Rotation Setting
  */
 /**************************************************************************/
-int8_t  Adafruit_RA8875::getRotation(void) { return _rotation; }
+int8_t  Adafruit_RA8875::getRotation(void) { 
+            //Serial.print("gr");
+            //Serial.println(_rotation);
+            //Serial.print("gr_w");
+            //Serial.println(_width);
+    return _rotation; 
+}
 
 /**************************************************************************/
 /*!
@@ -326,16 +339,58 @@ int8_t  Adafruit_RA8875::getRotation(void) { return _rotation; }
  */
 /**************************************************************************/
 void Adafruit_RA8875::setRotation(int8_t rotation) {
+    int16_t t;
     switch (rotation) {
-        case 2:
-            _rotation = rotation;
+        case 3:  // 270 degrees
+            if (_width > _height) {t = _width; _width = _height; _height = t;}
+            _rotation = 3;
+            break;
+        case 2:  // 180 degrees
+            if (_width < _height) {t = _width; _width = _height; _height = t;}
+            _rotation = 2;
+            break;
+        case 1:  // 90 degrees
+            if (_width > _height) {t = _width; _width = _height; _height = t;}
+            _rotation = 1;
             break;
         default:
+            if (_width < _height) {t = _width; _width = _height; _height = t;}
             _rotation = 0;
             break;
     }
+    //Serial.print("sr w");
+    //Serial.print(_width);
+    //Serial.print(", sr h");
+    //Serial.println(_height);
+    setRotationA(_rotation, _width, _height);
 }
 
+/************************* Rotate Text ***********************************/
+
+/**************************************************************************/
+/*!
+      Rotates the Text
+*/
+/**************************************************************************/
+void Adafruit_RA8875::setTextRotation(int8_t rotation) {
+    switch (rotation) {
+        case 2:
+            //Serial.println("Text180deg");
+            writeReg(0x22, 0x00); // set text to portrait mode (rotate 90 degrees)
+            writeReg(0x20, 0x08); //reverse scan direction for H (largest to smallest :))
+            break;
+        case 1:
+            //Serial.println("Text90deg");
+            writeReg(0x22, 0x10); // set text to portrait mode (rotate 90 degrees)
+            writeReg(0x20, 0x04); //reverse scan direction for Y (largest to smallest :))
+            break;
+        default:
+            //Serial.println("Text0deg");
+            writeReg(0x22, 0x0); // set text to portrait mode (rotate 90 degrees)
+            writeReg(0x20, 0x0); //reverse scan direction for Y (largest to smallest :))
+            break;
+    }
+}
 /************************* Text Mode ***********************************/
 
 /**************************************************************************/
@@ -368,8 +423,25 @@ void Adafruit_RA8875::textMode(void)
 /**************************************************************************/
 void Adafruit_RA8875::textSetCursor(uint16_t x, uint16_t y)
 {
-  x = applyRotationX(x);
-  y = applyRotationY(y);
+  //x = applyRotationX(x);
+  //y = applyRotationY(y);
+    int16_t t; 
+    switch(_rotation) {
+        case 1:  // 90 degrees
+            t = x;
+            x = _width  - 1 - y;
+            y = t;
+            break;
+        case 2:  // 180 degrees
+            x = _width  - 1 - x;
+            y = _height - 1 - y;
+            break;
+        case 3:  // 270 degrees
+            t = x;
+            x = y;
+            y = _height - 1 - t;
+            break;
+    }
 
   /* Set cursor location */
   writeCommand(0x2A);
@@ -508,6 +580,7 @@ void Adafruit_RA8875::cursorBlink(uint8_t rate){
 /**************************************************************************/
 void Adafruit_RA8875::textWrite(const char* buffer, uint16_t len)
 {
+  //Serial.println("88textWrite");
   if (len == 0) len = strlen(buffer);
   writeCommand(RA8875_MRWC);
   for (uint16_t i=0;i<len;i++)
@@ -612,15 +685,38 @@ void Adafruit_RA8875::fillRect(void) {
     @return the X value with current rotation applied
  */
 /**************************************************************************/
-int16_t Adafruit_RA8875::applyRotationX(int16_t x) {
+/*
+int16_t Adafruit_RA8875::applyRotationX(int16_t x, int16_t y) {
+
+    /* old switch
     switch(_rotation) {
         case 2:
             x = _width - 1 - x;
             break;
     }
+    int16_t t; 
+    switch(_rotation) {
+        case 1:  // 90 degrees
+            t = x;
+            x = _width  - 1 - y;
+            y = t;
+            break;
+        case 2:  // 180 degrees
+            x = _width  - 1 - x;
+            y = _height - 1 - y;
+            break;
+        case 3:  // 270 degrees
+            t = x;
+            x = y;
+            y = _height - 1 - t;
+            break;
+    }
     
     return x;
 }
+
+*/
+
 
 /**************************************************************************/
 /*!
@@ -629,15 +725,35 @@ int16_t Adafruit_RA8875::applyRotationX(int16_t x) {
     @return the Y value with current rotation applied
  */
 /**************************************************************************/
+/*
 int16_t Adafruit_RA8875::applyRotationY(int16_t y) {
+    /* old switch
     switch(_rotation) {
         case 2:
             y = _height - 1 - y;
             break;
     }
+    int16_t t; 
+    switch(_rotation) {
+        case 1:  // 90 degrees
+            t = x;
+            x = _width  - 1 - y;
+            y = t;
+            break;
+        case 2:  // 180 degrees
+            x = _width  - 1 - x;
+            y = _height - 1 - y;
+            break;
+        case 3:  // 270 degrees
+            t = x;
+            x = y;
+            y = _height - 1 - t;
+            break;
+    }
     
     return y + _voffset;
 }
+*/
 
 /**************************************************************************/
 /*!
@@ -650,9 +766,33 @@ int16_t Adafruit_RA8875::applyRotationY(int16_t y) {
 /**************************************************************************/
 void Adafruit_RA8875::drawPixel(int16_t x, int16_t y, uint16_t color)
 {
-  x = applyRotationX(x);
-  y = applyRotationY(y);
+  //x = applyRotationX(x);
+  //y = applyRotationY(y);
 
+    int16_t t; 
+    switch(_rotation) {
+        case 1:  // 90 degrees
+            t = x;
+            x = _height  - 1 - y;
+            y = t;
+            break;
+        case 2:  // 180 degrees
+            x = _width  - 1 - x;
+            y = _height - 1 - y;
+            break;
+        case 3:  // 270 degrees
+            t = x;
+            x = y;
+            y = _width - 1 - t;
+            break;
+        default:    
+            break;
+    }
+    //Serial.print("8dp_x");
+    //Serial.print(x);
+    //Serial.print(", y");
+    //Serial.println(y);
+    
   writeReg(RA8875_CURH0, x);
   writeReg(RA8875_CURH1, x >> 8);
   writeReg(RA8875_CURV0, y);
@@ -677,9 +817,27 @@ void Adafruit_RA8875::drawPixel(int16_t x, int16_t y, uint16_t color)
 /**************************************************************************/
 void Adafruit_RA8875::drawPixels(uint16_t * p, uint32_t num, int16_t x, int16_t y)
 {
-    x = applyRotationX(x);
-    y = applyRotationY(y);
+    //x = applyRotationX(x);
+    //y = applyRotationY(y);
 
+    int16_t t; 
+    switch(_rotation) {
+        case 1:  // 90 degrees
+            t = x;
+            x = _width  - 1 - y;
+            y = t;
+            break;
+        case 2:  // 180 degrees
+            x = _width  - 1 - x;
+            y = _height - 1 - y;
+            break;
+        case 3:  // 270 degrees
+            t = x;
+            x = y;
+            y = _height - 1 - t;
+            break;
+    }
+    
     writeReg(RA8875_CURH0, x);
     writeReg(RA8875_CURH1, x >> 8);
     writeReg(RA8875_CURV0, y);
@@ -715,10 +873,36 @@ void Adafruit_RA8875::drawPixels(uint16_t * p, uint32_t num, int16_t x, int16_t 
 /**************************************************************************/
 void Adafruit_RA8875::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color)
 {
-  x0 = applyRotationX(x0);
-  y0 = applyRotationY(y0);
-  x1 = applyRotationX(x1);
-  y1 = applyRotationY(y1);
+    int16_t t0; 
+    int16_t t1; 
+    switch(_rotation) {
+        case 1:  // 90 degrees
+            t0 = x0;
+            t1 = x1;
+            x0 = _height  - 1 - y0;
+            x1 = _height  - 1 - y1;
+            y0 = t0;
+            y1 = t1;
+            break;
+        case 2:  // 180 degrees
+            x0 = _width  - 1 - x0;
+            x1 = _width  - 1 - x1;
+            y0 = _height - 1 - y0;
+            y1 = _height - 1 - y1;
+            break;
+        case 3:  // 270 degrees
+            t0 = x0;
+            t1 = x1;
+            x0 = y0;
+            x1 = y1;
+            y0 = _width - 1 - t0;
+            y1 = _width - 1 - t1;
+            break;
+    }
+  //x0 = applyRotationX(x0);
+  //y0 = applyRotationY(y0);
+  //x1 = applyRotationX(x1);
+  //y1 = applyRotationY(y1);
 
   /* Set X */
   writeCommand(0x91);
@@ -831,7 +1015,10 @@ void Adafruit_RA8875::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint1
 /**************************************************************************/
 void Adafruit_RA8875::fillScreen(uint16_t color)
 {
-  rectHelper(0, 0, _width-1, _height-1, color, true);
+    int8_t r = _rotation;
+    _rotation = 0;
+    rectHelper(0, 0, rawW-1, rawH-1, color, true);
+    _rotation = r;
 }
 
 /**************************************************************************/
@@ -1015,8 +1202,25 @@ void Adafruit_RA8875::fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, 
 /**************************************************************************/
 void Adafruit_RA8875::circleHelper(int16_t x, int16_t y, int16_t r, uint16_t color, bool filled)
 {
-  x = applyRotationX(x);
-  y = applyRotationY(y);
+  //x = applyRotationX(x);
+  //y = applyRotationY(y);
+    int16_t t; 
+    switch(_rotation) {
+        case 1:  // 90 degrees
+            t = x;
+            x = _width  - 1 - y;
+            y = t;
+            break;
+        case 2:  // 180 degrees
+            x = _width  - 1 - x;
+            y = _height - 1 - y;
+            break;
+        case 3:  // 270 degrees
+            t = x;
+            x = y;
+            y = _height - 1 - t;
+            break;
+    }
 
   /* Set X */
   writeCommand(0x99);
@@ -1064,11 +1268,47 @@ void Adafruit_RA8875::circleHelper(int16_t x, int16_t y, int16_t r, uint16_t col
 /**************************************************************************/
 void Adafruit_RA8875::rectHelper(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color, bool filled)
 {
-  x = applyRotationX(x);
-  y = applyRotationY(y);
-  w = applyRotationX(w);
-  h = applyRotationY(h);
-
+  //x = applyRotationX(x);
+  //y = applyRotationY(y);
+  //w = applyRotationX(w);
+  //h = applyRotationY(h);
+    //Serial.println("rectHelp");
+    //Serial.print("rh r ");
+    //Serial.print(_rotation);
+    int16_t t; 
+    switch(_rotation) {
+        case 1:  // 90 degrees
+            t = x;
+            x = _height  - 1 - y;
+            y = t;
+            t = w;
+            w = _height - 1 - h;
+            h = t;
+            break;
+        case 2:  // 180 degrees
+            x = _width - 1 - x;
+            y = _height - 1 - y;
+            w = _width - 1 - w;
+            h = _height - 1 - h;
+            break;
+        case 3:  // 270 degrees
+            t = x;
+            x = y;
+            y = _width - 1 - t;
+            t = w;
+            w = h;
+            h = _width - 1 - t;
+            break;
+    }
+    //Serial.print("rh_x");
+    //Serial.print(x);
+    //Serial.print(", y");
+    //Serial.print(y);
+    //Serial.print(", w");
+    //Serial.print(w);
+    //Serial.print(", h");
+    //Serial.println(h);
+    
   /* Set X */
   writeCommand(0x91);
   writeData(x);
@@ -1123,13 +1363,50 @@ void Adafruit_RA8875::rectHelper(int16_t x, int16_t y, int16_t w, int16_t h, uin
 /**************************************************************************/
 void Adafruit_RA8875::triangleHelper(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color, bool filled)
 {
-  x0 = applyRotationX(x0);
-  y0 = applyRotationY(y0);
-  x1 = applyRotationX(x1);
-  y1 = applyRotationY(y1);
-  x2 = applyRotationX(x2);
-  y2 = applyRotationY(y2);
+  //x0 = applyRotationX(x0);
+  //y0 = applyRotationY(y0);
+  //x1 = applyRotationX(x1);
+  //y1 = applyRotationY(y1);
+  //x2 = applyRotationX(x2);
+  //y2 = applyRotationY(y2);
 
+    int16_t t0; 
+    int16_t t1; 
+    int16_t t2; 
+    switch(_rotation) {
+        case 1:  // 90 degrees
+            t0 = x0;
+            t1 = x1;
+            t2 = x2;
+            x0 = _width  - 1 - y0;
+            x1 = _width  - 1 - y1;
+            x2 = _width  - 1 - y2;
+            y0 = t0;
+            y1 = t1;
+            y2 = t2;
+            break;
+        case 2:  // 180 degrees
+            x0 = _width  - 1 - x0;
+            x1 = _width  - 1 - x1;
+            x2 = _width  - 1 - x2;
+            y0 = _height - 1 - y0;
+            y1 = _height - 1 - y1;
+            y2 = _height - 1 - y2;
+            break;
+        case 3:  // 270 degrees
+            t0 = x0;
+            t1 = x1;
+            t2 = x2;
+            x0 = y0;
+            x1 = y1;
+            x2 = y2;
+            y0 = _height - 1 - t0;
+            y1 = _height - 1 - t1;
+            y2 = _height - 1 - t2;
+            break;
+    }
+      
+    
   /* Set Point 0 */
   writeCommand(0x91);
   writeData(x0);
@@ -1190,8 +1467,25 @@ void Adafruit_RA8875::triangleHelper(int16_t x0, int16_t y0, int16_t x1, int16_t
 /**************************************************************************/
 void Adafruit_RA8875::ellipseHelper(int16_t xCenter, int16_t yCenter, int16_t longAxis, int16_t shortAxis, uint16_t color, bool filled)
 {
-  xCenter = applyRotationX(xCenter);
-  yCenter = applyRotationY(yCenter);
+  //xCenter = applyRotationX(xCenter);
+  //yCenter = applyRotationY(yCenter);
+    int16_t t; 
+    switch(_rotation) {
+        case 1:  // 90 degrees
+            t = xCenter;
+            xCenter = _width  - 1 - yCenter;
+            yCenter = t;
+            break;
+        case 2:  // 180 degrees
+            xCenter = _width  - 1 - xCenter;
+            yCenter = _height - 1 - yCenter;
+            break;
+        case 3:  // 270 degrees
+            t = xCenter;
+            xCenter = yCenter;
+            yCenter = _height - 1 - t;
+            break;
+    }
     
   /* Set Center Point */
   writeCommand(0xA5);
@@ -1243,10 +1537,30 @@ void Adafruit_RA8875::ellipseHelper(int16_t xCenter, int16_t yCenter, int16_t lo
 /**************************************************************************/
 void Adafruit_RA8875::curveHelper(int16_t xCenter, int16_t yCenter, int16_t longAxis, int16_t shortAxis, uint8_t curvePart, uint16_t color, bool filled)
 {
-  xCenter = applyRotationX(xCenter);
-  yCenter = applyRotationY(yCenter);
+  //xCenter = applyRotationX(xCenter);
+  //yCenter = applyRotationY(yCenter);
   curvePart = (curvePart + _rotation) % 4;
 
+    int16_t t; 
+    switch(_rotation) {
+        case 1:  // 90 degrees
+            t = xCenter;
+            xCenter = _width  - 1 - yCenter;
+            yCenter = t;
+            break;
+        case 2:  // 180 degrees
+            xCenter = _width  - 1 - xCenter;
+            yCenter = _height - 1 - yCenter;
+            break;
+        case 3:  // 270 degrees
+            t = xCenter;
+            xCenter = yCenter;
+            yCenter = _height - 1 - t;
+            break;
+    }
+
+    
+    
   /* Set Center Point */
   writeCommand(0xA5);
   writeData(xCenter);
@@ -1297,10 +1611,34 @@ void Adafruit_RA8875::curveHelper(int16_t xCenter, int16_t yCenter, int16_t long
 /**************************************************************************/
 void Adafruit_RA8875::roundRectHelper(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, uint16_t color, bool filled)
 {
-  x = applyRotationX(x);
-  y = applyRotationY(y);
-  w = applyRotationX(w);
-  h = applyRotationY(h);
+  //x = applyRotationX(x);
+  //y = applyRotationY(y);
+  //w = applyRotationX(w);
+  //h = applyRotationY(h);
+    int16_t t; 
+    switch(_rotation) {
+        case 1:  // 90 degrees
+            t = x;
+            x = _width  - 1 - y;
+            y = t;
+            t = h;
+            h = w;
+            w = t;
+            break;
+        case 2:  // 180 degrees
+            x = _width  - 1 - x;
+            y = _height - 1 - y;
+            break;
+        case 3:  // 270 degrees
+            t = x;
+            x = y;
+            y = _height - 1 - t;
+            t = h;
+            h = w;
+            w = t;
+            break;
+    } 
+    
   if (x > w) swap(x, w);
   if (y > h) swap(y, h);
 
