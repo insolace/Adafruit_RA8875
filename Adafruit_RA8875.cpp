@@ -688,7 +688,7 @@ void Adafruit_RA8875::fillRect(void) {
 /*
 int16_t Adafruit_RA8875::applyRotationX(int16_t x, int16_t y) {
 
-    /* old switch
+    // old switch
     switch(_rotation) {
         case 2:
             x = _width - 1 - x;
@@ -727,7 +727,7 @@ int16_t Adafruit_RA8875::applyRotationX(int16_t x, int16_t y) {
 /**************************************************************************/
 /*
 int16_t Adafruit_RA8875::applyRotationY(int16_t y) {
-    /* old switch
+    // old switch
     switch(_rotation) {
         case 2:
             y = _height - 1 - y;
