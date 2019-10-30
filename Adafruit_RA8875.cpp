@@ -853,6 +853,7 @@ void Adafruit_RA8875::drawPixels(uint16_t * p, uint32_t num, int16_t x, int16_t 
     digitalWrite(_cs, LOW);
     SPI.transfer(RA8875_DATAWRITE);
     while (num--) {
+        //~~ optimized from RA8875 master branch
 //        SPI.transfer(*p >> 8);
 //        SPI.transfer(*p & 0xFF);
 //        p++;
