@@ -589,10 +589,10 @@ void Adafruit_RA8875::textWrite(const char* buffer, uint16_t len)
 #if defined(__arm__)
     // This delay is needed with textEnlarge(1) because
     // Teensy 3.X is much faster than Arduino Uno
-    if (_textScale > 0) delay(1);
+    //if (_textScale > 0) delay(1);
 #else
     // For others, delay starting with textEnlarge(2)
-    if (_textScale > 1) delay(1);
+    //if (_textScale > 1) delay(1);
 #endif
   }
 }
